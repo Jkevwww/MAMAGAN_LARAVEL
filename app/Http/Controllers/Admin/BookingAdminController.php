@@ -13,6 +13,13 @@ class BookingAdminController extends Controller
     public function index(Request $request)
     {
         $bookings = Booking::with(['user', 'facility', 'payment', 'ticket'])
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                        ->orWhereHas('facility', fn ($facility) => $facility->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('ticket', fn ($ticket) => $ticket->where('reference_number', 'like', "%{$search}%"));
+                });
+            })
             ->when($request->booking_status, fn ($query, $status) => $query->where('booking_status', $status))
             ->when($request->payment_status, fn ($query, $status) => $query->where('payment_status', $status))
             ->latest()

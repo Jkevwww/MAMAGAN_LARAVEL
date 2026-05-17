@@ -9,6 +9,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased bg-slate-50 text-slate-900">
+    <div class="page-loader" aria-hidden="true">
+        <div class="skeleton-card">
+            <div class="skeleton-line h-4 w-32"></div>
+            <div class="mt-5 grid gap-3">
+                <div class="skeleton-tile h-16"></div>
+                <div class="skeleton-line h-3 w-11/12"></div>
+                <div class="skeleton-line h-3 w-8/12"></div>
+            </div>
+        </div>
+    </div>
     <div class="min-h-screen">
         <section class="relative min-h-[92vh] overflow-hidden">
             <img

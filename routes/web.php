@@ -66,8 +66,8 @@ Route::middleware(['auth', 'role:staff,admin,super_admin'])->prefix('admin')->na
 Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('facilities', FacilityAdminController::class)->except('show');
     Route::resource('promotions', PromotionController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('seasonal-rates', SeasonalRateController::class)->only(['index', 'store', 'destroy']);
-    Route::resource('blackout-dates', BlackoutDateController::class)->only(['index', 'store', 'destroy']);
+    Route::resource('seasonal-rates', SeasonalRateController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('blackout-dates', BlackoutDateController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/users', [UserAdminController::class, 'index'])->name('users.index');
     Route::patch('/users/{user}', [UserAdminController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy'])->name('users.destroy');

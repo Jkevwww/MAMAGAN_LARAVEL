@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\Promotion;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PromotionController extends Controller
 {
@@ -40,9 +41,11 @@ class PromotionController extends Controller
 
     private function validated(Request $request): array
     {
+        $promotion = $request->route('promotion');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('promotions', 'code')->ignore($promotion?->id)],
             'discount_type' => ['required', 'in:percent,fixed'],
             'discount_value' => ['required', 'numeric', 'min:0'],
             'minimum_amount' => ['nullable', 'numeric', 'min:0'],

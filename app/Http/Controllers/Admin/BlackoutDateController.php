@@ -19,15 +19,27 @@ class BlackoutDateController extends Controller
 
     public function store(Request $request)
     {
-        BlackoutDate::create($request->validate([
+        BlackoutDate::create($this->validated($request));
+
+        return back()->with('success', 'Blackout window saved.');
+    }
+
+    public function update(Request $request, BlackoutDate $blackoutDate)
+    {
+        $blackoutDate->update($this->validated($request));
+
+        return back()->with('success', 'Blackout window updated.');
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
             'facility_id' => ['nullable', 'exists:facilities,id'],
             'title' => ['required', 'string', 'max:255'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'reason' => ['nullable', 'string'],
-        ]));
-
-        return back()->with('success', 'Blackout window saved.');
+        ]);
     }
 
     public function destroy(BlackoutDate $blackoutDate)

@@ -19,15 +19,27 @@ class SeasonalRateController extends Controller
 
     public function store(Request $request)
     {
-        SeasonalRate::create($request->validate([
+        SeasonalRate::create($this->validated($request));
+
+        return back()->with('success', 'Seasonal rate saved.');
+    }
+
+    public function update(Request $request, SeasonalRate $seasonalRate)
+    {
+        $seasonalRate->update($this->validated($request));
+
+        return back()->with('success', 'Seasonal rate updated.');
+    }
+
+    private function validated(Request $request): array
+    {
+        return $request->validate([
             'facility_id' => ['required', 'exists:facilities,id'],
             'name' => ['required', 'string', 'max:255'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'price' => ['required', 'numeric', 'min:0'],
-        ]));
-
-        return back()->with('success', 'Seasonal rate saved.');
+        ]);
     }
 
     public function destroy(SeasonalRate $seasonalRate)
