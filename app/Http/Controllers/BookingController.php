@@ -118,6 +118,8 @@ class BookingController extends Controller
     public function recordPayment(Request $request, Booking $booking)
     {
         $this->authorizeOwner($booking);
+        abort_if(in_array($booking->booking_status, ['cancelled', 'checked_in'], true), 422);
+        abort_if($booking->payment_status === 'paid', 422);
 
         $data = $request->validate([
             'method' => ['required', 'string', 'max:30'],
@@ -147,8 +149,12 @@ class BookingController extends Controller
     {
         $this->authorizeOwner($booking);
         abort_if(in_array($booking->booking_status, ['checked_in', 'cancelled'], true), 422);
+        abort_if($booking->payment_status === 'paid', 422);
 
-        $booking->update(['booking_status' => 'cancelled']);
+        $booking->update([
+            'booking_status' => 'cancelled',
+            'payment_status' => $booking->payment_status === 'pending' ? 'failed' : $booking->payment_status,
+        ]);
         $this->log('booking.cancelled', $booking);
 
         return back()->with('success', 'Booking cancelled.');

@@ -7,18 +7,24 @@ use App\Models\Booking;
 use App\Models\Facility;
 use App\Models\Payment;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function __invoke()
     {
+        $today = Carbon::today();
+
         $summary = [
             'total_bookings' => Booking::count(),
             'total_revenue' => Payment::where('status', 'paid')->sum('amount'),
             'pending_bookings' => Booking::where('booking_status', 'pending')->count(),
             'paid_bookings' => Booking::where('payment_status', 'paid')->count(),
             'active_clients' => User::where('role', 'guest')->where('status', 'active')->count(),
+            'today_bookings' => Booking::whereDate('booking_date', $today)->count(),
+            'facilities' => Facility::count(),
+            'bookable_facilities' => Facility::where('is_active', true)->where('is_bookable', true)->count(),
         ];
 
         $dateExpression = DB::connection()->getDriverName() === 'sqlite'
@@ -27,15 +33,37 @@ class DashboardController extends Controller
 
         $monthlyRevenue = Payment::selectRaw("{$dateExpression} as label, SUM(amount) as total")
             ->where('status', 'paid')
+            ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
             ->groupBy('label')
             ->orderBy('label')
             ->pluck('total', 'label');
 
-        $bookingStatuses = Booking::select('booking_status', DB::raw('count(*) as total'))->groupBy('booking_status')->pluck('total', 'booking_status');
-        $paymentStatuses = Booking::select('payment_status', DB::raw('count(*) as total'))->groupBy('payment_status')->pluck('total', 'payment_status');
+        $monthLabels = collect(range(5, 0))->map(fn ($monthsAgo) => now()->subMonths($monthsAgo)->format('Y-m'));
+        $monthlyRevenue = $monthLabels->mapWithKeys(fn ($label) => [$label => (float) ($monthlyRevenue[$label] ?? 0)]);
+
+        $bookingStatuses = collect(['pending', 'approved', 'cancelled', 'checked_in'])
+            ->mapWithKeys(fn ($status) => [$status => 0])
+            ->merge(Booking::select('booking_status', DB::raw('count(*) as total'))->groupBy('booking_status')->pluck('total', 'booking_status'));
+
+        $paymentStatuses = collect(['pending', 'paid', 'failed', 'refunded'])
+            ->mapWithKeys(fn ($status) => [$status => 0])
+            ->merge(Booking::select('payment_status', DB::raw('count(*) as total'))->groupBy('payment_status')->pluck('total', 'payment_status'));
+
         $facilityUsage = Facility::withCount('bookings')->orderByDesc('bookings_count')->take(8)->pluck('bookings_count', 'name');
         $recentBookings = Booking::with(['user', 'facility', 'payment'])->latest()->take(10)->get();
+        $lowInventoryFacilities = Facility::where('is_active', true)
+            ->orderBy('inventory_count')
+            ->take(5)
+            ->get();
 
-        return view('admin.dashboard', compact('summary', 'monthlyRevenue', 'bookingStatuses', 'paymentStatuses', 'facilityUsage', 'recentBookings'));
+        return view('admin.dashboard', compact(
+            'summary',
+            'monthlyRevenue',
+            'bookingStatuses',
+            'paymentStatuses',
+            'facilityUsage',
+            'recentBookings',
+            'lowInventoryFacilities'
+        ));
     }
 }

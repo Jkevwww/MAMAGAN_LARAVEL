@@ -54,7 +54,7 @@ class BookingAdminController extends Controller
             'payment_status' => ['required', 'in:pending,paid,failed,refunded'],
         ]);
 
-        DB::transaction(function () use ($booking, $data) {
+        DB::transaction(function () use ($booking, $data, $ticketIssuer) {
             $booking->update([
                 'payment_status' => $data['payment_status'],
                 'booking_status' => $data['payment_status'] === 'paid' ? 'approved' : $booking->booking_status,
