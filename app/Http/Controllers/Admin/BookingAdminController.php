@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\Ticket;
+use App\Services\TicketIssuer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class BookingAdminController extends Controller
 {
@@ -42,7 +41,7 @@ class BookingAdminController extends Controller
         return back()->with('success', 'Booking status updated.');
     }
 
-    public function verifyPayment(Request $request, Booking $booking)
+    public function verifyPayment(Request $request, Booking $booking, TicketIssuer $ticketIssuer)
     {
         $data = $request->validate([
             'payment_status' => ['required', 'in:pending,paid,failed,refunded'],
@@ -61,30 +60,13 @@ class BookingAdminController extends Controller
             ]);
 
             if ($data['payment_status'] === 'paid') {
-                $this->issueTicket($booking->fresh(['user', 'facility']));
+                $ticketIssuer->issue($booking->fresh(['user', 'facility']));
             }
 
             $this->log('payment.verified', $booking, $data);
         });
 
         return back()->with('success', 'Payment status updated.');
-    }
-
-    private function issueTicket(Booking $booking): Ticket
-    {
-        return Ticket::firstOrCreate(
-            ['booking_id' => $booking->id],
-            [
-                'reference_number' => 'MAM-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
-                'qr_payload' => json_encode([
-                    'booking_id' => $booking->id,
-                    'tourist' => $booking->user->email,
-                    'facility' => $booking->facility->name,
-                    'signature' => hash_hmac('sha256', $booking->id.'|'.$booking->user_id, config('app.key')),
-                ]),
-                'issued_at' => now(),
-            ]
-        );
     }
 
     private function log(string $action, Booking $booking, array $properties = []): void

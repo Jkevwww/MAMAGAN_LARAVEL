@@ -120,12 +120,12 @@
                 <span>Continue with Google</span>
             </a>
 
-            <a href="{{ route('socialite.redirect', 'facebook') }}" 
-               class="flex items-center justify-center w-full px-8 py-4 text-sm font-semibold text-white bg-[#1877F2] border-2 border-transparent rounded-2xl shadow-sm hover:bg-[#166FE5] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#1877F2]/25 transition-all duration-200 active:scale-[0.98]">
+            <a href="{{ route('socialite.redirect', 'github') }}"
+               class="flex items-center justify-center w-full px-8 py-4 text-sm font-semibold text-white bg-slate-950 border-2 border-transparent rounded-2xl shadow-sm hover:bg-slate-800 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-slate-500/25 transition-all duration-200 active:scale-[0.98]">
                 <svg class="w-6 h-6 mr-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.25 3.35.95.1-.74.4-1.25.73-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18.92-.26 1.9-.38 2.88-.39.98.01 1.96.13 2.88.39 2.19-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
                 </svg>
-                <span>Continue with Facebook</span>
+                <span>Continue with GitHub</span>
             </a>
         </div>
 

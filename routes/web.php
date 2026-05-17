@@ -16,12 +16,21 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Webhooks\PaymongoWebhookController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+Route::post('/webhooks/paymongo', PaymongoWebhookController::class)
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->name('webhooks.paymongo');
 
 Route::get('/auth/{provider}/redirect', [SocialiteController::class, 'redirectToProvider'])->name('socialite.redirect');
 Route::get('/auth/{provider}/callback', [SocialiteController::class, 'handleProviderCallback'])->name('socialite.callback');
+
+Route::get('/facilities', [FacilityController::class, 'index'])->name('facilities.index');
+Route::get('/facilities/{facility}', [FacilityController::class, 'show'])->name('facilities.show');
+Route::redirect('/cottages', '/facilities')->name('cottages.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn () => redirect()->route('bookings.index'))->name('dashboard');
@@ -30,8 +39,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/facilities', [FacilityController::class, 'index'])->name('facilities.index');
-    Route::get('/facilities/{facility}', [FacilityController::class, 'show'])->name('facilities.show');
     Route::post('/facilities/{facility}/reviews', [ReviewController::class, 'store'])->name('facilities.reviews.store');
 
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
@@ -40,8 +47,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/payment', [BookingController::class, 'recordPayment'])->name('bookings.payment.record');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-
-    Route::redirect('/cottages', '/facilities')->name('cottages.index');
 });
 
 Route::middleware(['auth', 'role:staff,admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {

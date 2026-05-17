@@ -41,15 +41,17 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
-    'facebook' => [
-        'client_id' => env('FACEBOOK_CLIENT_ID'),
-        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
-        'redirect' => env('FACEBOOK_REDIRECT_URI'),
+    'github' => [
+        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_secret' => env('GITHUB_CLIENT_SECRET'),
+        'redirect' => env('GITHUB_REDIRECT_URI'),
     ],
 
     'paymongo' => [
         'public_key' => env('PAYMONGO_PUBLIC_KEY'),
         'secret_key' => env('PAYMONGO_SECRET_KEY'),
+        'webhook_id' => env('PAYMONGO_WEBHOOK_ID', env('WEBHOOK_ID')),
+        'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET', env('WEBHOOK_SECRET_KEY')),
     ],
 
 ];
