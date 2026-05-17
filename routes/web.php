@@ -1,53 +1,74 @@
 <?php
 
+use App\Http\Controllers\Admin\BlackoutDateController;
+use App\Http\Controllers\Admin\BookingAdminController;
+use App\Http\Controllers\Admin\CheckInController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FacilityAdminController;
+use App\Http\Controllers\Admin\PromotionController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SeasonalRateController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SystemLogController;
+use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\Auth\SocialiteController;
-use App\Http\Controllers\CottageController;
-use App\Http\Controllers\ReservationController;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\AdminCottageController;
-
-Route::get('/', function () {
-    return view('welcome');
-});
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::view('/', 'welcome')->name('home');
 
 Route::get('/auth/{provider}/redirect', [SocialiteController::class, 'redirectToProvider'])->name('socialite.redirect');
 Route::get('/auth/{provider}/callback', [SocialiteController::class, 'handleProviderCallback'])->name('socialite.callback');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', fn () => redirect()->route('bookings.index'))->name('dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Cottage routes for users
-    Route::get('/cottages', [CottageController::class, 'index'])->name('cottages.index');
-    Route::get('/cottages/{cottage}', [CottageController::class, 'show'])->name('cottages.show');
+    Route::get('/facilities', [FacilityController::class, 'index'])->name('facilities.index');
+    Route::get('/facilities/{facility}', [FacilityController::class, 'show'])->name('facilities.show');
+    Route::post('/facilities/{facility}/reviews', [ReviewController::class, 'store'])->name('facilities.reviews.store');
 
-    // Reservation routes for users
-    Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
-    Route::get('/cottages/{cottage}/book', [ReservationController::class, 'create'])->name('reservations.create');
-    Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
-    Route::get('/reservations/{reservation}/payment/success', [ReservationController::class, 'paymentSuccess'])->name('reservations.payment_success');
-    Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])->name('reservations.show');
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/facilities/{facility}/book', [BookingController::class, 'create'])->name('bookings.create');
+    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/payment', [BookingController::class, 'recordPayment'])->name('bookings.payment.record');
+    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+
+    Route::redirect('/cottages', '/facilities')->name('cottages.index');
 });
 
-// Admin routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-    
-    // Manage Cottages
-    Route::resource('cottages', AdminCottageController::class);
-    
-    // Manage Reservations
-    Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
-    Route::get('/reservations/{reservation}', [AdminController::class, 'showReservation'])->name('reservations.show');
-    Route::post('/reservations/{reservation}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.update_status');
+Route::middleware(['auth', 'role:staff,admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/check-in', [CheckInController::class, 'index'])->name('checkin.index');
+    Route::post('/check-in/lookup', [CheckInController::class, 'lookup'])->name('checkin.lookup');
+    Route::post('/check-in/{ticket}/confirm', [CheckInController::class, 'confirm'])->name('checkin.confirm');
+
+    Route::get('/bookings', [BookingAdminController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/{booking}', [BookingAdminController::class, 'show'])->name('bookings.show');
+    Route::patch('/bookings/{booking}/status', [BookingAdminController::class, 'updateStatus'])->name('bookings.status');
+    Route::patch('/bookings/{booking}/payment', [BookingAdminController::class, 'verifyPayment'])->name('bookings.payment');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+});
+
+Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('facilities', FacilityAdminController::class)->except('show');
+    Route::resource('promotions', PromotionController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('seasonal-rates', SeasonalRateController::class)->only(['index', 'store', 'destroy']);
+    Route::resource('blackout-dates', BlackoutDateController::class)->only(['index', 'store', 'destroy']);
+    Route::get('/users', [UserAdminController::class, 'index'])->name('users.index');
+    Route::patch('/users/{user}', [UserAdminController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserAdminController::class, 'destroy'])->name('users.destroy');
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
 });
 
 require __DIR__.'/auth.php';

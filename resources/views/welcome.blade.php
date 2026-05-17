@@ -34,7 +34,7 @@
                     <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight">Experience Paradise at Mamagan Beach</h1>
                     <p class="text-xl text-gray-200 mb-10 leading-relaxed">Book your perfect beach getaway today. Beautiful cottages, crystal clear water, and unforgettable sunsets await you.</p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="{{ route('cottages.index') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-xl">Browse Cottages</a>
+                        <a href="{{ route('facilities.index') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-xl">Browse Facilities</a>
                         <a href="#info" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition">Learn More</a>
                     </div>
                 </div>

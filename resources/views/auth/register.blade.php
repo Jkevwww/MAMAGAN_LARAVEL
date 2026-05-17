@@ -21,6 +21,15 @@
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
+        <!-- Phone -->
+        <div class="mb-4">
+            <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+            <div class="mt-1 relative rounded-md">
+                <input id="phone" class="block w-full px-3 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm transition duration-150 ease-in-out" type="text" name="phone" value="{{ old('phone') }}" required autocomplete="tel" placeholder="09XXXXXXXXX">
+            </div>
+            <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        </div>
+
         <!-- Email Address -->
         <div class="mb-4">
             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>

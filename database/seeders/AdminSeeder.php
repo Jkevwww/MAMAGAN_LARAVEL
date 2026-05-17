@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 use App\Models\User;
@@ -15,11 +14,20 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
+        User::updateOrCreate(['email' => 'admin@mamagan.com'], [
             'name' => 'Admin User',
-            'email' => 'admin@mamagan.com',
             'password' => Hash::make('password'),
-            'role' => 'admin',
+            'role' => 'super_admin',
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        User::updateOrCreate(['email' => 'staff@mamagan.com'], [
+            'name' => 'Staff User',
+            'password' => Hash::make('password'),
+            'role' => 'staff',
+            'status' => 'active',
+            'email_verified_at' => now(),
         ]);
     }
 }
