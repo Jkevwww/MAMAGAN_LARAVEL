@@ -21,7 +21,11 @@ class DashboardController extends Controller
             'active_clients' => User::where('role', 'guest')->where('status', 'active')->count(),
         ];
 
-        $monthlyRevenue = Payment::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as label, SUM(amount) as total")
+        $dateExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $monthlyRevenue = Payment::selectRaw("{$dateExpression} as label, SUM(amount) as total")
             ->where('status', 'paid')
             ->groupBy('label')
             ->orderBy('label')
