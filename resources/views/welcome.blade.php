@@ -22,7 +22,7 @@
     <div class="min-h-screen">
         <section class="relative min-h-[92vh] overflow-hidden">
             <img
-                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2200&q=85"
+                src="{{ asset('assets/backgrounds/background.jpg') }}"
                 alt="Mamagan Beach shoreline"
                 class="absolute inset-0 h-full w-full object-cover"
             >
@@ -30,7 +30,7 @@
 
             <header class="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
                 <a href="{{ route('home') }}" class="text-lg font-bold tracking-wide text-white sm:text-xl">
-                    MAMAGAN
+                    WELCOME
                 </a>
                 <nav class="flex items-center gap-2 text-sm font-semibold">
                     <a href="{{ route('facilities.index') }}" class="hidden rounded-md px-3 py-2 text-white hover:bg-white/10 sm:inline-flex">Facilities</a>
