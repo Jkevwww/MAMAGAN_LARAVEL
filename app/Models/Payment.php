@@ -12,6 +12,10 @@ class Payment extends Model
         'amount',
         'status',
         'reference_number',
+        'paymongo_checkout_id',
+        'paymongo_payment_id',
+        'checkout_url',
+        'provider_payload',
         'proof_path',
         'verified_at',
         'verified_by',
@@ -19,6 +23,7 @@ class Payment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'provider_payload' => 'array',
         'verified_at' => 'datetime',
     ];
 

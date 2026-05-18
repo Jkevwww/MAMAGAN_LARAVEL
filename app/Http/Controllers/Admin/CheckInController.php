@@ -98,7 +98,10 @@ class CheckInController extends Controller
             }
         }
 
-        $payment = Payment::where('reference_number', $reference)->first();
+        $payment = Payment::where('reference_number', $reference)
+            ->orWhere('paymongo_checkout_id', $reference)
+            ->orWhere('paymongo_payment_id', $reference)
+            ->first();
 
         if ($payment?->booking?->ticket) {
             return $query->find($payment->booking->ticket->id);

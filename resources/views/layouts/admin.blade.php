@@ -8,17 +8,6 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-slate-100 text-slate-900">
-    <div class="page-loader" aria-hidden="true">
-        <div class="skeleton-card">
-            <div class="skeleton-line h-4 w-32"></div>
-            <div class="mt-5 grid gap-3">
-                <div class="skeleton-tile h-16"></div>
-                <div class="skeleton-line h-3 w-11/12"></div>
-                <div class="skeleton-line h-3 w-8/12"></div>
-            </div>
-        </div>
-    </div>
-
     @php
         $icons = [
             'dashboard' => '<path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/>',

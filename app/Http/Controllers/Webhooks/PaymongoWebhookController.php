@@ -25,7 +25,7 @@ class PaymongoWebhookController extends Controller
         $paymentData = Arr::get($payload, 'data.attributes.data', []);
         $paymentAttributes = Arr::get($paymentData, 'attributes', []);
 
-        if (! in_array($eventType, ['payment.paid', 'payment_intent.succeeded', 'source.chargeable'], true)) {
+        if (! in_array($eventType, ['checkout_session.payment.paid', 'payment.paid', 'payment_intent.succeeded', 'source.chargeable', 'payment.failed'], true)) {
             $this->log('paymongo.webhook_ignored', null, ['event_type' => $eventType]);
 
             return response()->json(['message' => 'Event ignored.']);
@@ -45,10 +45,11 @@ class PaymongoWebhookController extends Controller
 
         DB::transaction(function () use ($booking, $paymentData, $paymentAttributes, $ticketIssuer, $eventType) {
             $amount = Arr::get($paymentAttributes, 'amount');
+            $isFailed = $eventType === 'payment.failed';
 
             $booking->update([
-                'booking_status' => 'approved',
-                'payment_status' => 'paid',
+                'booking_status' => $isFailed ? $booking->booking_status : 'approved',
+                'payment_status' => $isFailed ? 'failed' : 'paid',
             ]);
 
             $booking->payment()->updateOrCreate(
@@ -56,15 +57,20 @@ class PaymongoWebhookController extends Controller
                 [
                     'method' => Arr::get($paymentAttributes, 'source.type', Arr::get($paymentAttributes, 'payment_method.type', 'paymongo')),
                     'amount' => $amount ? ((float) $amount / 100) : $booking->total_amount,
-                    'status' => 'paid',
+                    'status' => $isFailed ? 'failed' : 'paid',
                     'reference_number' => Arr::get($paymentAttributes, 'reference_number', Arr::get($paymentData, 'id')),
-                    'verified_at' => now(),
+                    'paymongo_checkout_id' => $this->checkoutSessionId($paymentData, $paymentAttributes),
+                    'paymongo_payment_id' => $this->paymentId($paymentData, $paymentAttributes),
+                    'provider_payload' => $paymentData,
+                    'verified_at' => $isFailed ? null : now(),
                 ]
             );
 
-            $ticketIssuer->issue($booking->fresh(['user', 'facility']));
+            if (! $isFailed) {
+                $ticketIssuer->issue($booking->fresh(['user', 'facility']));
+            }
 
-            $this->log('paymongo.payment_verified', $booking, [
+            $this->log($isFailed ? 'paymongo.payment_failed' : 'paymongo.payment_verified', $booking, [
                 'event_type' => $eventType,
                 'payment_id' => Arr::get($paymentData, 'id'),
             ]);
@@ -83,6 +89,26 @@ class PaymongoWebhookController extends Controller
             return Booking::find($bookingId);
         }
 
+        $checkoutSessionId = $this->checkoutSessionId($paymentData, $paymentAttributes);
+
+        if ($checkoutSessionId) {
+            $payment = Payment::where('paymongo_checkout_id', $checkoutSessionId)->first();
+
+            if ($payment?->booking) {
+                return $payment->booking;
+            }
+        }
+
+        $paymentId = $this->paymentId($paymentData, $paymentAttributes);
+
+        if ($paymentId) {
+            $payment = Payment::where('paymongo_payment_id', $paymentId)->orWhere('reference_number', $paymentId)->first();
+
+            if ($payment?->booking) {
+                return $payment->booking;
+            }
+        }
+
         $reference = Arr::get($paymentAttributes, 'reference_number')
             ?? Arr::get($paymentAttributes, 'external_reference_number')
             ?? Arr::get($paymentData, 'id');
@@ -94,6 +120,29 @@ class PaymongoWebhookController extends Controller
         $payment = Payment::where('reference_number', $reference)->first();
 
         return $payment?->booking;
+    }
+
+    private function checkoutSessionId(array $paymentData, array $paymentAttributes): ?string
+    {
+        if (Arr::get($paymentData, 'type') === 'checkout_session') {
+            return Arr::get($paymentData, 'id');
+        }
+
+        return Arr::get($paymentAttributes, 'checkout_session_id')
+            ?? Arr::get($paymentAttributes, 'checkout_session.id')
+            ?? Arr::get($paymentAttributes, 'metadata.checkout_session_id');
+    }
+
+    private function paymentId(array $paymentData, array $paymentAttributes): ?string
+    {
+        if (Arr::get($paymentData, 'type') === 'payment') {
+            return Arr::get($paymentData, 'id');
+        }
+
+        return Arr::get($paymentAttributes, 'payment_id')
+            ?? Arr::get($paymentAttributes, 'payments.0.id')
+            ?? Arr::get($paymentAttributes, 'latest_payment.id')
+            ?? Arr::get($paymentAttributes, 'metadata.payment_id');
     }
 
     private function hasValidSignature(Request $request): bool

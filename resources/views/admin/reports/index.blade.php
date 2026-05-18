@@ -1,39 +1,106 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Reports</h1>
-        <a href="{{ route('admin.reports.export', request()->query()) }}" class="rounded-md bg-cyan-700 px-4 py-2 text-sm font-semibold text-white">Export CSV</a>
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">Reports</h1>
+            <p class="mt-1 text-sm text-slate-500">Review bookings, revenue, payment status, and facility usage.</p>
+        </div>
+        <a href="{{ route('admin.reports.export', request()->query()) }}" class="inline-flex items-center justify-center rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600">Export CSV</a>
     </div>
-    <form class="mt-6 grid gap-3 rounded-lg bg-white p-5 shadow-sm md:grid-cols-3 xl:grid-cols-6">
-        <input name="date_from" type="date" value="{{ request('date_from') }}" class="rounded-md border-gray-300">
-        <input name="date_to" type="date" value="{{ request('date_to') }}" class="rounded-md border-gray-300">
-        <select name="facility_id" class="rounded-md border-gray-300"><option value="">All facilities</option>@foreach ($facilities as $facility)<option value="{{ $facility->id }}" @selected(request('facility_id') == $facility->id)>{{ $facility->name }}</option>@endforeach</select>
-        <select name="category" class="rounded-md border-gray-300"><option value="">All categories</option>@foreach (['Cottage','Cabana / Room','Beach Equipment'] as $category)<option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>@endforeach</select>
-        <select name="booking_status" class="rounded-md border-gray-300"><option value="">Booking status</option>@foreach (['pending','approved','cancelled','checked_in'] as $status)<option value="{{ $status }}" @selected(request('booking_status') === $status)>{{ ucfirst($status) }}</option>@endforeach</select>
-        <select name="payment_status" class="rounded-md border-gray-300"><option value="">Payment status</option>@foreach (['pending','paid','failed','refunded'] as $status)<option value="{{ $status }}" @selected(request('payment_status') === $status)>{{ ucfirst($status) }}</option>@endforeach</select>
-        <button class="rounded-md bg-slate-900 px-4 py-2 text-white xl:col-span-6">Run Report</button>
+
+    <form class="mt-6 flex flex-col items-end gap-2" x-data="{ filtersOpen: {{ request()->hasAny(['date_from', 'date_to', 'facility_id', 'category', 'booking_status', 'payment_status']) ? 'true' : 'false' }} }">
+        <div class="inline-flex w-full items-center justify-end gap-1.5 rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-slate-200 sm:w-auto">
+            <button type="button" data-no-loader="true" @click="filtersOpen = !filtersOpen" class="relative inline-flex h-8 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M7 12h10M10 18h4"/></svg>
+                Filters
+                @if (request()->hasAny(['date_from', 'date_to', 'facility_id', 'category', 'booking_status', 'payment_status']))
+                    <span class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-cyan-600 ring-2 ring-white"></span>
+                @endif
+            </button>
+            <button class="h-8 rounded-md bg-cyan-700 px-3 text-sm font-semibold text-white transition hover:bg-cyan-600">Run Report</button>
+        </div>
+
+        <div x-show="filtersOpen" x-transition x-cloak class="w-full rounded-lg bg-white p-4 shadow-lg ring-1 ring-slate-200 lg:w-[720px]">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-950">Report filters</h2>
+                    <p class="mt-1 text-xs text-slate-500">Narrow report data by date, facility, category, and status.</p>
+                </div>
+                <button type="button" data-no-loader="true" @click="filtersOpen = false" class="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Close filters">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">From
+                    <input name="date_from" type="date" value="{{ request('date_from') }}" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">To
+                    <input name="date_to" type="date" value="{{ request('date_to') }}" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">Facility
+                    <select name="facility_id" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                        <option value="">All facilities</option>
+                        @foreach ($facilities as $facility)
+                            <option value="{{ $facility->id }}" @selected(request('facility_id') == $facility->id)>{{ $facility->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">Category
+                    <select name="category" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                        <option value="">All categories</option>
+                        @foreach (['Cottage','Cabana / Room','Beach Equipment'] as $category)
+                            <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">Booking status
+                    <select name="booking_status" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                        <option value="">All booking statuses</option>
+                        @foreach (['pending','approved','cancelled','checked_in'] as $status)
+                            <option value="{{ $status }}" @selected(request('booking_status') === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-slate-700">Payment status
+                    <select name="payment_status" class="h-9 rounded-md border-slate-300 text-sm font-normal">
+                        <option value="">All payment statuses</option>
+                        @foreach (['pending','paid','failed','refunded'] as $status)
+                            <option value="{{ $status }}" @selected(request('payment_status') === $status)>{{ ucfirst($status) }}</option>
+                        @endforeach
+                    </select>
+                </label>
+            </div>
+            <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <a href="{{ route('admin.reports.index') }}" class="rounded-md border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Reset</a>
+                <button class="rounded-md bg-cyan-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600">Apply filters</button>
+            </div>
+        </div>
     </form>
+
     <div class="mt-6 grid gap-4 sm:grid-cols-4">
-        <div class="rounded-lg bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Bookings</p><p class="text-2xl font-bold">{{ $totals['bookings'] }}</p></div>
-        <div class="rounded-lg bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Revenue</p><p class="text-2xl font-bold">₱{{ number_format($totals['revenue'], 2) }}</p></div>
-        <div class="rounded-lg bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Paid</p><p class="text-2xl font-bold">{{ $totals['paid'] }}</p></div>
-        <div class="rounded-lg bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Unpaid</p><p class="text-2xl font-bold">{{ $totals['unpaid'] }}</p></div>
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-sm text-slate-500">Bookings</p><p class="text-2xl font-bold">{{ $totals['bookings'] }}</p></div>
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-sm text-slate-500">Revenue</p><p class="text-2xl font-bold">&#8369;{{ number_format($totals['revenue'], 2) }}</p></div>
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-sm text-slate-500">Paid</p><p class="text-2xl font-bold">{{ $totals['paid'] }}</p></div>
+        <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"><p class="text-sm text-slate-500">Unpaid</p><p class="text-2xl font-bold">{{ $totals['unpaid'] }}</p></div>
     </div>
-    <div class="mt-6 overflow-hidden rounded-lg bg-white shadow-sm">
+
+    <div class="mt-6 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
         <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50"><tr><th class="p-3">Ref</th><th class="p-3">Tourist</th><th class="p-3">Facility</th><th class="p-3">Date</th><th class="p-3">Status</th><th class="p-3">Total</th></tr></thead>
+            <thead class="bg-slate-50 text-slate-600"><tr><th class="p-3">Ref</th><th class="p-3">Tourist</th><th class="p-3">Facility</th><th class="p-3">Date</th><th class="p-3">Status</th><th class="p-3">Total</th></tr></thead>
             <tbody>
-                @foreach ($bookings as $booking)
-                    <tr class="border-t">
-                        <td class="p-3">{{ $booking->ticket?->reference_number }}</td>
+                @forelse ($bookings as $booking)
+                    <tr class="border-t transition hover:bg-slate-50">
+                        <td class="p-3">{{ $booking->ticket?->reference_number ?: 'None' }}</td>
                         <td class="p-3">{{ $booking->user->name }}</td>
                         <td class="p-3">{{ $booking->facility->name }}</td>
                         <td class="p-3">{{ $booking->booking_date->format('Y-m-d') }}</td>
-                        <td class="p-3">{{ $booking->booking_status }} / {{ $booking->payment_status }}</td>
-                        <td class="p-3">₱{{ number_format($booking->total_amount, 2) }}</td>
+                        <td class="p-3">{{ ucfirst(str_replace('_', ' ', $booking->booking_status)) }} / {{ ucfirst($booking->payment_status) }}</td>
+                        <td class="p-3">&#8369;{{ number_format($booking->total_amount, 2) }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="6" class="p-6 text-center text-slate-500">No report rows found.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>

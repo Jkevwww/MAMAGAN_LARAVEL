@@ -4,7 +4,7 @@
     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
             <h1 class="text-2xl font-bold">QR Check-In</h1>
-            <p class="mt-1 text-sm text-slate-500">Scan a paid guest ticket or search by ticket reference, payment reference, or booking ID.</p>
+            <p class="mt-1 text-sm text-slate-500">Scan a paid guest ticket or search by ticket reference, PayMongo reference, or booking ID.</p>
         </div>
     </div>
 
@@ -40,7 +40,7 @@
             <form method="POST" action="{{ route('admin.checkin.lookup') }}" class="mt-5 grid gap-3">
                 @csrf
                 <label class="text-sm font-semibold text-slate-700" for="reference">Reference or payload</label>
-                <textarea id="reference" name="reference" rows="4" class="rounded-lg border-gray-300" placeholder="MAM-YYYYMMDD-XXXXXX, payment reference, booking ID, or scanned JSON payload" required>{{ old('reference') }}</textarea>
+                <textarea id="reference" name="reference" rows="4" class="rounded-lg border-gray-300" placeholder="MAM-YYYYMMDD-XXXXXX, PayMongo payment/checkout reference, booking ID, or scanned JSON payload" required>{{ old('reference') }}</textarea>
                 <button class="rounded-lg bg-cyan-700 px-4 py-2 font-semibold text-white transition hover:bg-cyan-600">Lookup Ticket</button>
             </form>
 
@@ -96,7 +96,6 @@
             // The form submission below is the important part; stop errors are non-blocking.
         }
 
-        window.showPageLoader?.();
         scanForm.submit();
     };
 

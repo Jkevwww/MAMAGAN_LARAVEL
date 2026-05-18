@@ -71,7 +71,7 @@
                     <div class="flex justify-between gap-3"><dt class="text-slate-500">Rate</dt><dd class="font-semibold">&#8369;{{ number_format($facility->price_min, 2) }} - &#8369;{{ number_format($facility->price_max, 2) }}</dd></div>
                 </dl>
                 <div class="mt-5 rounded-lg bg-cyan-50 p-4 text-sm leading-6 text-cyan-900">
-                    Final amount is calculated after seasonal rate and promo checks. Payment is verified by staff before a QR ticket is issued.
+                    Final amount is calculated after seasonal rate and promo checks. You will be redirected to PayMongo, and your QR ticket is issued automatically after payment confirmation.
                 </div>
             </aside>
         </div>

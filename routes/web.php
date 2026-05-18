@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/facilities/{facility}/book', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/paymongo', [BookingController::class, 'payWithPaymongo'])->name('bookings.paymongo');
     Route::post('/bookings/{booking}/payment', [BookingController::class, 'recordPayment'])->name('bookings.payment.record');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 });

@@ -7,9 +7,12 @@ use App\Models\Booking;
 use App\Models\Facility;
 use App\Models\Promotion;
 use App\Models\SeasonalRate;
+use App\Services\PaymongoCheckout;
+use App\Services\TicketIssuer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class BookingController extends Controller
 {
@@ -30,7 +33,7 @@ class BookingController extends Controller
         return view('bookings.create', compact('facility'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PaymongoCheckout $paymongoCheckout)
     {
         $data = $request->validate([
             'facility_id' => ['required', 'exists:facilities,id'],
@@ -104,12 +107,20 @@ class BookingController extends Controller
             return $booking;
         });
 
-        return redirect()->route('bookings.show', $booking)->with('success', 'Booking created. Record your payment reference when ready.');
+        return $this->redirectToPaymongo($booking, $paymongoCheckout)
+            ?? redirect()->route('bookings.show', $booking)->withErrors(['payment' => 'Booking created, but PayMongo checkout is not configured yet.']);
     }
 
-    public function show(Booking $booking)
+    public function show(Booking $booking, PaymongoCheckout $paymongoCheckout, TicketIssuer $ticketIssuer)
     {
         $this->authorizeOwner($booking);
+        $booking->load(['payment']);
+
+        if ($booking->payment_status !== 'paid' && $booking->payment?->paymongo_checkout_id) {
+            $paymongoCheckout->syncPaidPayment($booking, $ticketIssuer);
+            $booking->refresh();
+        }
+
         $booking->load(['facility', 'payment', 'ticket', 'promotion']);
 
         return view('bookings.show', compact('booking'));
@@ -143,6 +154,16 @@ class BookingController extends Controller
         $this->log('payment.reference_recorded', $booking);
 
         return back()->with('success', 'Payment reference submitted for verification.');
+    }
+
+    public function payWithPaymongo(Booking $booking, PaymongoCheckout $paymongoCheckout)
+    {
+        $this->authorizeOwner($booking);
+        abort_if(in_array($booking->booking_status, ['cancelled', 'checked_in'], true), 422);
+        abort_if($booking->payment_status === 'paid', 422);
+
+        return $this->redirectToPaymongo($booking, $paymongoCheckout)
+            ?? back()->withErrors(['payment' => 'PayMongo checkout is not configured yet.']);
     }
 
     public function cancel(Booking $booking)
@@ -201,6 +222,48 @@ class BookingController extends Controller
     private function authorizeOwner(Booking $booking): void
     {
         abort_unless($booking->user_id === Auth::id(), 403);
+    }
+
+    private function redirectToPaymongo(Booking $booking, PaymongoCheckout $paymongoCheckout)
+    {
+        if (! $paymongoCheckout->configured()) {
+            return null;
+        }
+
+        $booking->loadMissing(['facility', 'user', 'payment']);
+
+        if ($booking->payment?->checkout_url && $booking->payment?->status === 'pending') {
+            return redirect()->away($booking->payment->checkout_url);
+        }
+
+        try {
+            $checkout = $paymongoCheckout->createForBooking($booking);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+
+        if (blank($checkout['checkout_url'] ?? null)) {
+            return null;
+        }
+
+        $booking->payment()->updateOrCreate(
+            ['booking_id' => $booking->id],
+            [
+                'method' => 'paymongo',
+                'amount' => $booking->total_amount,
+                'status' => 'pending',
+                'reference_number' => 'MAM-BOOKING-'.$booking->id,
+                'paymongo_checkout_id' => $checkout['id'] ?? null,
+                'checkout_url' => $checkout['checkout_url'],
+                'provider_payload' => $checkout['payload'] ?? null,
+            ]
+        );
+
+        $this->log('paymongo.checkout_created', $booking);
+
+        return redirect()->away($checkout['checkout_url']);
     }
 
     private function log(string $action, Booking $booking): void

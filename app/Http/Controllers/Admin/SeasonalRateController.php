@@ -9,10 +9,26 @@ use Illuminate\Http\Request;
 
 class SeasonalRateController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $rates = SeasonalRate::with('facility')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('facility', fn ($facility) => $facility->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($request->filled('facility_id'), fn ($query) => $query->where('facility_id', $request->facility_id))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('ends_at', '>=', $request->date_from))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('starts_at', '<=', $request->date_to))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
         return view('admin.rates.index', [
-            'rates' => SeasonalRate::with('facility')->latest()->paginate(15),
+            'rates' => $rates,
             'facilities' => Facility::orderBy('name')->get(),
         ]);
     }

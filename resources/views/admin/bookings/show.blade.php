@@ -53,6 +53,8 @@
             <div class="text-sm leading-7">
                 <p><strong>Method:</strong> {{ $booking->payment?->method ?: 'Not selected' }}</p>
                 <p><strong>Reference:</strong> {{ $booking->payment?->reference_number ?: 'Not submitted' }}</p>
+                <p><strong>PayMongo Checkout:</strong> {{ $booking->payment?->paymongo_checkout_id ?: 'None' }}</p>
+                <p><strong>PayMongo Payment:</strong> {{ $booking->payment?->paymongo_payment_id ?: 'None' }}</p>
                 <p><strong>Verified:</strong> {{ $booking->payment?->verified_at?->format('M d, Y g:i A') ?: 'No' }}</p>
                 @if ($booking->payment?->proof_path)
                     <a href="{{ asset('storage/'.$booking->payment->proof_path) }}" target="_blank" class="font-semibold text-cyan-700">View proof</a>

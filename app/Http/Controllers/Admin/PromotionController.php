@@ -10,10 +10,29 @@ use Illuminate\Validation\Rule;
 
 class PromotionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $promotions = Promotion::with('facility')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhereHas('facility', fn ($facility) => $facility->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->status === 'active'))
+            ->when($request->filled('discount_type'), fn ($query) => $query->where('discount_type', $request->discount_type))
+            ->when($request->filled('facility_id'), fn ($query) => $request->facility_id === 'all'
+                ? $query->whereNull('facility_id')
+                : $query->where('facility_id', $request->facility_id))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
         return view('admin.promotions.index', [
-            'promotions' => Promotion::with('facility')->latest()->paginate(15),
+            'promotions' => $promotions,
             'facilities' => Facility::orderBy('name')->get(),
         ]);
     }
