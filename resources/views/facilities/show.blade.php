@@ -1,79 +1,114 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-                <h2 class="text-xl font-semibold text-gray-800">{{ $facility->name }}</h2>
-                <p class="mt-1 text-sm text-gray-500">{{ $facility->category }} &middot; {{ $facility->rental_type }}</p>
+                <p class="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">{{ $facility->category }}</p>
+                <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-950">{{ $facility->name }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ ucfirst($facility->rental_type) }} rental &middot; {{ $facility->capacity }} guest capacity</p>
             </div>
-            <a href="{{ route('facilities.index') }}" class="text-sm font-semibold text-cyan-700 hover:text-cyan-800">Back to facilities</a>
+            <a href="{{ route('facilities.index') }}" class="inline-flex w-full justify-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-stone-50 md:w-auto">
+                Back to Facilities
+            </a>
         </div>
     </x-slot>
-    <div class="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
-        <div class="grid gap-6 lg:grid-cols-[1.3fr_.7fr]">
-            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <section class="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-stone-200">
                 <div class="aspect-[16/9] bg-slate-200">
                     @if ($facility->image)
                         <img src="{{ asset('storage/'.$facility->image) }}" alt="{{ $facility->name }}" class="h-full w-full object-cover">
                     @else
-                        <div class="flex h-full items-center justify-center bg-cyan-700 text-2xl font-bold text-white">{{ $facility->category }}</div>
+                        <div class="flex h-full items-center justify-center bg-teal-800 px-6 text-center text-3xl font-extrabold text-white">{{ $facility->category }}</div>
                     @endif
                 </div>
-                <div class="p-5">
+                <div class="p-5 sm:p-6">
                     <div class="flex flex-wrap gap-2">
-                        <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">{{ $facility->category }}</span>
-                        <span class="rounded-full bg-cyan-50 px-3 py-1 text-sm font-semibold text-cyan-700">{{ ucfirst($facility->rental_type) }}</span>
-                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">{{ $facility->inventory_count }} available</span>
+                        <span class="rounded-full bg-stone-100 px-3 py-1 text-sm font-bold text-slate-700">{{ $facility->category }}</span>
+                        <span class="rounded-full bg-teal-50 px-3 py-1 text-sm font-bold text-teal-700">{{ ucfirst($facility->rental_type) }}</span>
+                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">{{ $facility->inventory_count }} available</span>
                     </div>
-                    <p class="mt-4 leading-7 text-gray-700">{{ $facility->description ?: 'No description provided.' }}</p>
+                    <h3 class="mt-5 text-lg font-extrabold text-slate-950">Overview</h3>
+                    <p class="mt-2 max-w-3xl leading-7 text-slate-600">{{ $facility->description ?: 'No description provided.' }}</p>
                 </div>
-            </div>
-            <aside class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                <div class="text-2xl font-bold">&#8369;{{ number_format($facility->price_min, 2) }}</div>
-                <p class="text-sm text-gray-500">Price range up to &#8369;{{ number_format($facility->price_max, 2) }}</p>
-                <dl class="mt-5 grid gap-3 text-sm">
-                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Capacity</dt><dd class="font-semibold">{{ $facility->capacity }}</dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Inventory</dt><dd class="font-semibold">{{ $facility->inventory_count }}</dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Rating</dt><dd class="font-semibold text-amber-600">&#9733; {{ number_format($facility->averageRating(), 1) }}</dd></div>
-                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Reviews</dt><dd class="font-semibold">{{ $facility->reviews->count() }}</dd></div>
-                </dl>
-                @if ($facility->is_active && $facility->is_bookable)
-                    <a href="{{ route('bookings.create', $facility) }}" class="mt-5 block rounded-lg bg-cyan-700 px-4 py-3 text-center font-semibold text-white transition hover:bg-cyan-600">Book this facility</a>
-                @else
-                    <div class="mt-5 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">This facility is currently unavailable for booking.</div>
-                @endif
+            </section>
+
+            <aside class="lg:sticky lg:top-24 lg:self-start">
+                <div class="rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200">
+                    <p class="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Starting Rate</p>
+                    <div class="mt-2 text-3xl font-extrabold text-slate-950">&#8369;{{ number_format($facility->price_min, 2) }}</div>
+                    <p class="mt-1 text-sm text-slate-500">Up to &#8369;{{ number_format($facility->price_max, 2) }} depending on rate rules.</p>
+
+                    <dl class="mt-5 grid gap-3 text-sm">
+                        <div class="flex items-center justify-between gap-3 rounded-md bg-stone-50 p-3">
+                            <dt class="text-slate-500">Capacity</dt>
+                            <dd class="font-extrabold text-slate-950">{{ $facility->capacity }} guests</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 rounded-md bg-stone-50 p-3">
+                            <dt class="text-slate-500">Inventory</dt>
+                            <dd class="font-extrabold text-slate-950">{{ $facility->inventory_count }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 rounded-md bg-stone-50 p-3">
+                            <dt class="text-slate-500">Rating</dt>
+                            <dd class="font-extrabold text-amber-600">&#9733; {{ number_format($facility->averageRating(), 1) }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 rounded-md bg-stone-50 p-3">
+                            <dt class="text-slate-500">Reviews</dt>
+                            <dd class="font-extrabold text-slate-950">{{ $facility->reviews->count() }}</dd>
+                        </div>
+                    </dl>
+
+                    @if ($facility->is_active && $facility->is_bookable)
+                        <a href="{{ route('bookings.create', $facility) }}" class="mt-5 block rounded-md bg-teal-700 px-4 py-3 text-center font-bold text-white transition hover:bg-teal-600">
+                            Book This Facility
+                        </a>
+                    @else
+                        <div class="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">This facility is currently unavailable for booking.</div>
+                    @endif
+                </div>
             </aside>
         </div>
 
-        <section class="mt-8 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h3 class="font-semibold">Reviews</h3>
-            <div class="mt-4 space-y-4">
+        <section class="mt-6 rounded-lg bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
+            <div class="flex flex-col gap-2 border-b border-stone-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-950">Guest Reviews</h3>
+                    <p class="mt-1 text-sm text-slate-500">Recent feedback from resort guests.</p>
+                </div>
+                <div class="text-sm font-bold text-amber-600">&#9733; {{ number_format($facility->averageRating(), 1) }}</div>
+            </div>
+
+            <div class="mt-5 grid gap-4">
                 @forelse ($facility->reviews->sortByDesc('created_at')->take(8) as $review)
-                    <div class="border-b border-slate-100 pb-4">
-                        <div class="flex justify-between gap-3 text-sm">
-                            <strong>{{ $review->user->name }}</strong>
-                            <span class="text-amber-600">&#9733; {{ $review->rating }}</span>
+                    <article class="border-b border-stone-100 pb-4 last:border-0 last:pb-0">
+                        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <strong class="text-sm text-slate-950">{{ $review->user->name }}</strong>
+                            <span class="text-sm font-bold text-amber-600">&#9733; {{ $review->rating }}</span>
                         </div>
-                        <p class="mt-2 text-sm leading-6 text-gray-700">{{ $review->comment }}</p>
-                    </div>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">{{ $review->comment ?: 'No written comment.' }}</p>
+                    </article>
                 @empty
-                    <p class="text-sm text-gray-500">No reviews yet.</p>
+                    <div class="rounded-md bg-stone-50 p-4 text-sm text-slate-600">No reviews yet.</div>
                 @endforelse
             </div>
+
             @auth
-                <form method="POST" action="{{ route('facilities.reviews.store', $facility) }}" enctype="multipart/form-data" class="mt-6 grid gap-3 rounded-lg bg-slate-50 p-4">
+                <form method="POST" action="{{ route('facilities.reviews.store', $facility) }}" enctype="multipart/form-data" class="mt-6 grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4">
                     @csrf
-                    <select name="rating" class="rounded-lg border-gray-300" required>
-                        <option value="">Rate this facility</option>
-                        @for ($i = 5; $i >= 1; $i--)
-                            <option value="{{ $i }}">{{ $i }} star{{ $i > 1 ? 's' : '' }}</option>
-                        @endfor
-                    </select>
-                    <textarea name="comment" rows="3" class="rounded-lg border-gray-300" placeholder="Comment"></textarea>
-                    <input type="file" name="media[]" multiple class="rounded-lg border border-gray-300 bg-white p-2">
-                    <button class="w-fit rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-800">Submit Review</button>
+                    <div class="grid gap-3 sm:grid-cols-[180px_1fr]">
+                        <select name="rating" class="h-10 rounded-md border-stone-300 text-sm" required>
+                            <option value="">Rating</option>
+                            @for ($i = 5; $i >= 1; $i--)
+                                <option value="{{ $i }}">{{ $i }} star{{ $i > 1 ? 's' : '' }}</option>
+                            @endfor
+                        </select>
+                        <input type="file" name="media[]" multiple class="rounded-md border border-stone-300 bg-white p-2 text-sm">
+                    </div>
+                    <textarea name="comment" rows="3" class="rounded-md border-stone-300 text-sm" placeholder="Share your experience"></textarea>
+                    <button class="w-full rounded-md bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 sm:w-fit">Submit Review</button>
                 </form>
             @else
-                <div class="mt-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                <div class="mt-6 rounded-md bg-stone-50 p-4 text-sm text-slate-600">
                     Log in after booking to leave a review.
                 </div>
             @endauth

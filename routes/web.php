@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/{booking}/paymongo', [BookingController::class, 'payWithPaymongo'])->name('bookings.paymongo');
     Route::post('/bookings/{booking}/payment', [BookingController::class, 'recordPayment'])->name('bookings.payment.record');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 });
 
 Route::middleware(['auth', 'role:staff,admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {

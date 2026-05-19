@@ -181,6 +181,19 @@ class BookingController extends Controller
         return back()->with('success', 'Booking cancelled.');
     }
 
+    public function destroy(Booking $booking)
+    {
+        $this->authorizeOwner($booking);
+        abort_unless($booking->booking_status === 'cancelled', 422);
+
+        DB::transaction(function () use ($booking) {
+            $this->log('booking.deleted', $booking);
+            $booking->delete();
+        });
+
+        return redirect()->route('bookings.index')->with('success', 'Cancelled booking deleted.');
+    }
+
     private function hasInventory(Facility $facility, string $date, ?string $startTime, ?string $endTime, int $quantity): bool
     {
         $reserved = Booking::where('facility_id', $facility->id)
