@@ -26,7 +26,7 @@ class SystemLogController extends Controller
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date_from))
             ->when($request->filled('date_to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date_to))
             ->latest()
-            ->paginate(30)
+            ->paginate(10)
             ->withQueryString();
 
         $actions = SystemLog::distinct()->orderBy('action')->pluck('action')->filter()->values();
