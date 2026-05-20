@@ -19,8 +19,16 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Webhooks\PaymongoWebhookController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::view('/', 'welcome')->name('home');
+Route::get('/media/{path}', function (string $path) {
+    abort_if(str_contains($path, '..') || str_contains($path, '\\'), 404);
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    return Storage::disk('public')->response($path);
+})->where('path', '.*')->name('media.public');
+
 Route::post('/webhooks/paymongo', PaymongoWebhookController::class)
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('webhooks.paymongo');
