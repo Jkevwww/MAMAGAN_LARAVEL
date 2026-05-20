@@ -7,12 +7,42 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class CheckInController extends Controller
 {
     public function index()
     {
-        return view('admin.checkin.index');
+        $today = Carbon::today();
+
+        $summary = [
+            'checked_in_today' => Ticket::whereDate('checked_in_at', $today)->count(),
+            'expected_today' => Booking::whereDate('booking_date', $today)
+                ->where('payment_status', 'paid')
+                ->count(),
+            'waiting_today' => Booking::whereDate('booking_date', $today)
+                ->where('payment_status', 'paid')
+                ->whereHas('ticket', fn ($ticket) => $ticket->whereNull('checked_in_at'))
+                ->count(),
+            'unpaid_today' => Booking::whereDate('booking_date', $today)
+                ->where('payment_status', '!=', 'paid')
+                ->count(),
+        ];
+
+        $recentCheckIns = Ticket::with(['booking.user', 'booking.facility', 'checker'])
+            ->whereNotNull('checked_in_at')
+            ->latest('checked_in_at')
+            ->take(5)
+            ->get();
+
+        $todayArrivals = Booking::with(['user', 'facility', 'ticket'])
+            ->whereDate('booking_date', $today)
+            ->where('payment_status', 'paid')
+            ->orderBy('start_time')
+            ->take(6)
+            ->get();
+
+        return view('admin.checkin.index', compact('summary', 'recentCheckIns', 'todayArrivals'));
     }
 
     public function lookup(Request $request)

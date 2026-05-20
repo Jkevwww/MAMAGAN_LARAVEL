@@ -10,7 +10,7 @@ class UserAdminController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::when($request->filled('search'), function ($query) use ($request) {
+        $filteredUsers = User::when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
 
                 $query->where(function ($inner) use ($search) {
@@ -20,12 +20,21 @@ class UserAdminController extends Controller
                 });
             })
             ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status));
+
+        $users = (clone $filteredUsers)
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.users.index', compact('users'));
+        $summary = [
+            'total' => User::count(),
+            'active' => User::where('status', 'active')->count(),
+            'staff' => User::whereIn('role', ['staff', 'admin', 'super_admin'])->count(),
+            'filtered' => (clone $filteredUsers)->count(),
+        ];
+
+        return view('admin.users.index', compact('users', 'summary'));
     }
 
     public function update(Request $request, User $user)

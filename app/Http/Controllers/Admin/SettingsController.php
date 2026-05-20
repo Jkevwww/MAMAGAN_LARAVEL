@@ -11,8 +11,17 @@ class SettingsController extends Controller
     public function edit()
     {
         $settings = AppSetting::pluck('value', 'key');
+        $requiredKeys = ['resort_name', 'email', 'phone', 'address', 'business_hours'];
+        $completedRequired = collect($requiredKeys)->filter(fn ($key) => filled($settings[$key] ?? null))->count();
+        $summary = [
+            'total' => AppSetting::count(),
+            'completed_required' => $completedRequired,
+            'required_count' => count($requiredKeys),
+            'completion' => (int) round(($completedRequired / count($requiredKeys)) * 100),
+            'last_updated' => AppSetting::latest('updated_at')->value('updated_at'),
+        ];
 
-        return view('admin.settings.edit', compact('settings'));
+        return view('admin.settings.edit', compact('settings', 'summary'));
     }
 
     public function update(Request $request)

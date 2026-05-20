@@ -5,13 +5,73 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BlackoutDate;
 use App\Models\Facility;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class BlackoutDateController extends Controller
 {
     public function index(Request $request)
     {
-        $blackouts = BlackoutDate::with('facility')
+        $calendarMonth = $request->input('calendar_month', now()->format('Y-m'));
+
+        try {
+            $calendarDate = preg_match('/^\d{4}-\d{2}$/', $calendarMonth)
+                ? Carbon::createFromFormat('Y-m', $calendarMonth)->startOfMonth()
+                : now()->startOfMonth();
+        } catch (\Throwable) {
+            $calendarDate = now()->startOfMonth();
+        }
+        $calendarStart = $calendarDate->copy()->startOfWeek();
+        $calendarEnd = $calendarDate->copy()->endOfMonth()->endOfWeek();
+
+        $blackouts = $this->filteredBlackoutQuery($request)
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $calendarBlackouts = $this->filteredBlackoutQuery($request)
+            ->whereDate('starts_at', '<=', $calendarEnd)
+            ->whereDate('ends_at', '>=', $calendarStart)
+            ->orderBy('starts_at')
+            ->get();
+
+        $today = now()->toDateString();
+        $summary = [
+            'total' => $this->filteredBlackoutQuery($request)->count(),
+            'active_today' => $this->filteredBlackoutQuery($request)
+                ->whereDate('starts_at', '<=', $today)
+                ->whereDate('ends_at', '>=', $today)
+                ->count(),
+            'this_month' => $this->filteredBlackoutQuery($request)
+                ->whereDate('starts_at', '<=', $calendarDate->copy()->endOfMonth())
+                ->whereDate('ends_at', '>=', $calendarDate)
+                ->count(),
+            'all_facilities' => $this->filteredBlackoutQuery($request)
+                ->whereNull('facility_id')
+                ->count(),
+        ];
+
+        $upcomingBlackouts = $this->filteredBlackoutQuery($request)
+            ->whereDate('ends_at', '>=', $today)
+            ->orderBy('starts_at')
+            ->limit(5)
+            ->get();
+
+        return view('admin.blackouts.index', [
+            'blackouts' => $blackouts,
+            'calendarBlackouts' => $calendarBlackouts,
+            'calendarDate' => $calendarDate,
+            'calendarStart' => $calendarStart,
+            'calendarEnd' => $calendarEnd,
+            'summary' => $summary,
+            'upcomingBlackouts' => $upcomingBlackouts,
+            'facilities' => Facility::orderBy('name')->get(),
+        ]);
+    }
+
+    private function filteredBlackoutQuery(Request $request)
+    {
+        return BlackoutDate::with('facility')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
 
@@ -25,15 +85,7 @@ class BlackoutDateController extends Controller
                 ? $query->whereNull('facility_id')
                 : $query->where('facility_id', $request->facility_id))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('ends_at', '>=', $request->date_from))
-            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('starts_at', '<=', $request->date_to))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('admin.blackouts.index', [
-            'blackouts' => $blackouts,
-            'facilities' => Facility::orderBy('name')->get(),
-        ]);
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('starts_at', '<=', $request->date_to));
     }
 
     public function store(Request $request)

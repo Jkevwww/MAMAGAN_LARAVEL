@@ -6,34 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\Promotion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class PromotionController extends Controller
 {
     public function index(Request $request)
     {
-        $promotions = Promotion::with('facility')
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->search;
-
-                $query->where(function ($inner) use ($search) {
-                    $inner->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%")
-                        ->orWhereHas('facility', fn ($facility) => $facility->where('name', 'like', "%{$search}%"));
-                });
-            })
-            ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->status === 'active'))
-            ->when($request->filled('discount_type'), fn ($query) => $query->where('discount_type', $request->discount_type))
-            ->when($request->filled('facility_id'), fn ($query) => $request->facility_id === 'all'
-                ? $query->whereNull('facility_id')
-                : $query->where('facility_id', $request->facility_id))
+        $today = Carbon::today();
+        $filteredQuery = $this->filteredPromotionQuery($request);
+        $analyticsPromotions = (clone $filteredQuery)->get();
+        $promotions = (clone $filteredQuery)
             ->latest()
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
+
+        $summary = [
+            'total' => $analyticsPromotions->count(),
+            'usable' => $analyticsPromotions->filter(fn ($promotion) => $this->isUsableNow($promotion, $today))->count(),
+            'inactive' => $analyticsPromotions->where('is_active', false)->count(),
+            'expired' => $analyticsPromotions->filter(fn ($promotion) => $promotion->ends_at?->lt($today))->count(),
+            'used' => $analyticsPromotions->sum('used_count'),
+        ];
+        $discountBreakdown = $analyticsPromotions
+            ->groupBy('discount_type')
+            ->map->count()
+            ->sortDesc();
 
         return view('admin.promotions.index', [
             'promotions' => $promotions,
             'facilities' => Facility::orderBy('name')->get(),
+            'summary' => $summary,
+            'discountBreakdown' => $discountBreakdown,
         ]);
     }
 
@@ -80,5 +84,34 @@ class PromotionController extends Controller
         $data['minimum_amount'] = $data['minimum_amount'] ?? 0;
 
         return $data;
+    }
+
+    private function filteredPromotionQuery(Request $request)
+    {
+        return Promotion::with('facility')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhereHas('facility', fn ($facility) => $facility
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('category', 'like', "%{$search}%"));
+                });
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->status === 'active'))
+            ->when($request->filled('discount_type'), fn ($query) => $query->where('discount_type', $request->discount_type))
+            ->when($request->filled('facility_id'), fn ($query) => $request->facility_id === 'all'
+                ? $query->whereNull('facility_id')
+                : $query->where('facility_id', $request->facility_id));
+    }
+
+    private function isUsableNow(Promotion $promotion, Carbon $today): bool
+    {
+        return $promotion->is_active
+            && (! $promotion->starts_at || $promotion->starts_at->lte($today))
+            && (! $promotion->ends_at || $promotion->ends_at->gte($today))
+            && (! $promotion->usage_limit || $promotion->used_count < $promotion->usage_limit);
     }
 }

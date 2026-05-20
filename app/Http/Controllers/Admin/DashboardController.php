@@ -20,11 +20,16 @@ class DashboardController extends Controller
             'total_bookings' => Booking::count(),
             'total_revenue' => Payment::where('status', 'paid')->sum('amount'),
             'pending_bookings' => Booking::where('booking_status', 'pending')->count(),
+            'approved_bookings' => Booking::where('booking_status', 'approved')->count(),
+            'checked_in_bookings' => Booking::where('booking_status', 'checked_in')->count(),
+            'cancelled_bookings' => Booking::where('booking_status', 'cancelled')->count(),
             'paid_bookings' => Booking::where('payment_status', 'paid')->count(),
+            'pending_payments' => Booking::where('payment_status', 'pending')->count(),
             'active_clients' => User::where('role', 'guest')->where('status', 'active')->count(),
             'today_bookings' => Booking::whereDate('booking_date', $today)->count(),
             'facilities' => Facility::count(),
             'bookable_facilities' => Facility::where('is_active', true)->where('is_bookable', true)->count(),
+            'low_inventory' => Facility::where('is_active', true)->where('inventory_count', '<=', 3)->count(),
         ];
 
         $dateExpression = DB::connection()->getDriverName() === 'sqlite'
@@ -51,6 +56,13 @@ class DashboardController extends Controller
 
         $facilityUsage = Facility::withCount('bookings')->orderByDesc('bookings_count')->take(8)->pluck('bookings_count', 'name');
         $recentBookings = Booking::with(['user', 'facility', 'payment'])->latest()->take(10)->get();
+        $upcomingBookings = Booking::with(['user', 'facility'])
+            ->whereDate('booking_date', '>=', $today)
+            ->whereIn('booking_status', ['pending', 'approved'])
+            ->orderBy('booking_date')
+            ->orderBy('start_time')
+            ->take(6)
+            ->get();
         $lowInventoryFacilities = Facility::where('is_active', true)
             ->orderBy('inventory_count')
             ->take(5)
@@ -63,6 +75,7 @@ class DashboardController extends Controller
             'paymentStatuses',
             'facilityUsage',
             'recentBookings',
+            'upcomingBookings',
             'lowInventoryFacilities'
         ));
     }
